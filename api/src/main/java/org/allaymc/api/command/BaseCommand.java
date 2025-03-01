@@ -60,6 +60,11 @@ public abstract class BaseCommand implements Command {
         return Collections.unmodifiableSet(flags);
     }
 
+    @Override
+    public CommandData getCustomCommandData(EntityPlayer player) {
+        return null;
+    }
+
     private void prepareNetworkData() {
         // Aliases
         if (!aliases.isEmpty()) {
@@ -84,7 +89,12 @@ public abstract class BaseCommand implements Command {
 
     @Override
     public CommandData buildNetworkDataFor(EntityPlayer player) {
-        if (!networkDataPrepared) prepareNetworkData();
+        if (getCustomCommandData(player) != null) {
+            return getCustomCommandData(player);
+        }
+        if (!networkDataPrepared) {
+            prepareNetworkData();
+        }
         return new CommandData(name, I18n.get().tr(player.getLangCode(), description), flags, CommandPermission.ANY, networkAliasesData, List.of(), networkOverloadsData);
     }
 
@@ -94,31 +104,31 @@ public abstract class BaseCommand implements Command {
             var builder = new StringBuilder();
             builder.append("- /").append(this.getName());
             for (var commandParameter : commandParameters) {
-                    if (commandParameter.getEnumData() == null) {
-                        builder.append(!commandParameter.isOptional()?" <":" [")
-                                .append(commandParameter.getName())
-                                .append(": ")
-                                .append(commandParameter.getType().getParamType().name().toLowerCase(Locale.ENGLISH))
-                                .append(!commandParameter.isOptional()?">":"]");
+                if (commandParameter.getEnumData() == null) {
+                    builder.append(!commandParameter.isOptional() ? " <" : " [")
+                            .append(commandParameter.getName())
+                            .append(": ")
+                            .append(commandParameter.getType().getParamType().name().toLowerCase(Locale.ENGLISH))
+                            .append(!commandParameter.isOptional() ? ">" : "]");
+                } else {
+                    var enums = commandParameter.getEnumData().getValues()
+                            .keySet().stream().toList();
+                    if (enums.size() == 1 && !commandParameter.isOptional()) {
+                        builder.append(" ").append(enums.getFirst());
                     } else {
-                        var enums = commandParameter.getEnumData().getValues()
-                                .keySet().stream().toList();
-                        if (enums.size() == 1 && !commandParameter.isOptional()) {
-                            builder.append(" ").append(enums.getFirst());
-                        } else {
-                            builder.append(!commandParameter.isOptional() ? " <" : " [")
-                                    .append(
-                                            enums.isEmpty() ?
-                                                    commandParameter.getName() + ": " + commandParameter.getEnumData().getName() :
-                                                    String.join("|",
-                                                            enums
-                                                                    .subList(0, Math.min(commandParameter.getEnumData().getValues().size(), 10))
-                                                    )
-                                    )
-                                    .append(commandParameter.getEnumData().getValues().size() > 10 ? "|..." : "")
-                                    .append(!commandParameter.isOptional() ? ">" : "]");
-                        }
+                        builder.append(!commandParameter.isOptional() ? " <" : " [")
+                                .append(
+                                        enums.isEmpty() ?
+                                                commandParameter.getName() + ": " + commandParameter.getEnumData().getName() :
+                                                String.join("|",
+                                                        enums
+                                                                .subList(0, Math.min(commandParameter.getEnumData().getValues().size(), 10))
+                                                )
+                                )
+                                .append(commandParameter.getEnumData().getValues().size() > 10 ? "|..." : "")
+                                .append(!commandParameter.isOptional() ? ">" : "]");
                     }
+                }
             }
             return builder.toString();
         }).toList();

@@ -103,4 +103,11 @@ public interface Command {
      * @return this command's overloaded description string
      */
     List<String> getCommandFormatTips();
+
+    /**
+     * Get the custom built command data for AvailableCommandsPacket
+     *
+     * @return the custom command data
+     */
+    CommandData getCustomCommandData(EntityPlayer player);
 }
